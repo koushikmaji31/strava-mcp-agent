@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>strava-mcp-agent - Give Claude Access to Your Strava Data</title>
+<meta name="description" content="MCP server that exposes your Strava athletic data as tools for Claude and other LLMs. 13 tools for runs, rides, swims, coaching analysis.">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;--surface:#111113;--surface2:#1a1a1f;--border:#2a2a30;
+  --text:#e4e4e7;--text2:#a1a1aa;--accent:#fc4c02;--accent2:#ff6b2b;
+  --green:#22c55e;--blue:#3b82f6;--purple:#a855f7;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --mono:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+
+/* Nav */
+nav{position:fixed;top:0;width:100%;z-index:100;padding:1rem 2rem;
+  background:rgba(10,10,11,.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center}
+nav .logo{font-weight:700;font-size:1.1rem;letter-spacing:-.02em}
+nav .logo span{color:var(--accent)}
+nav .links{display:flex;gap:2rem;align-items:center}
+nav .links a{color:var(--text2);font-size:.9rem;transition:color .2s}
+nav .links a:hover{color:var(--text)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.4rem;border-radius:8px;font-size:.9rem;font-weight:500;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2);color:#fff;transform:translateY(-1px)}
+.btn-ghost{border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
+
+/* Hero */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:8rem 2rem 4rem;position:relative}
+.hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:800px;height:800px;background:radial-gradient(circle,rgba(252,76,2,.08) 0%,transparent 70%);
+  pointer-events:none}
+.badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:99px;
+  background:var(--surface2);border:1px solid var(--border);font-size:.8rem;color:var(--text2);margin-bottom:1.5rem}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;
+  margin-bottom:1.5rem;max-width:800px}
+h1 .highlight{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.2rem;color:var(--text2);max-width:600px;margin-bottom:2.5rem}
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.install-cmd{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.2rem;border-radius:8px;
+  background:var(--surface);border:1px solid var(--border);font-family:var(--mono);font-size:.9rem;
+  color:var(--green);cursor:pointer;transition:border-color .2s}
+.install-cmd:hover{border-color:var(--accent)}
+.install-cmd .dollar{color:var(--text2)}
+.install-cmd .copy{color:var(--text2);font-size:.75rem;padding:.2rem .5rem;border-radius:4px;
+  background:var(--surface2);transition:all .2s}
+.install-cmd:hover .copy{color:var(--accent)}
+
+/* Stats strip */
+.stats{display:flex;justify-content:center;gap:4rem;padding:3rem 2rem;border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);background:var(--surface)}
+.stat{text-align:center}
+.stat .num{font-size:2rem;font-weight:800;color:var(--accent)}
+.stat .label{font-size:.85rem;color:var(--text2);margin-top:.25rem}
+
+/* Section */
+section{padding:6rem 2rem}
+.container{max-width:1100px;margin:0 auto}
+.section-label{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);margin-bottom:.75rem}
+.section-title{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin-bottom:1rem}
+.section-desc{font-size:1.05rem;color:var(--text2);max-width:600px;margin-bottom:3rem}
+
+/* Tool grid */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1px;
+  background:var(--border);border-radius:16px;overflow:hidden;border:1px solid var(--border)}
+.tool-card{background:var(--surface);padding:1.5rem;transition:background .2s}
+.tool-card:hover{background:var(--surface2)}
+.tool-name{font-family:var(--mono);font-size:.9rem;font-weight:600;color:var(--accent);margin-bottom:.5rem}
+.tool-desc{font-size:.9rem;color:var(--text2);line-height:1.5}
+
+/* Code block */
+.code-section{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+.code-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.code-header{display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;
+  background:var(--surface2);border-bottom:1px solid var(--border);font-size:.8rem;color:var(--text2)}
+.code-header .dot{width:10px;height:10px;border-radius:50%}
+.code-header .dot:nth-child(1){background:#ff5f57}
+.code-header .dot:nth-child(2){background:#ffbd2e}
+.code-header .dot:nth-child(3){background:#28ca41}
+.code-body{padding:1.25rem;font-family:var(--mono);font-size:.85rem;line-height:1.8;overflow-x:auto}
+.code-body .key{color:var(--blue)}
+.code-body .str{color:var(--green)}
+.code-body .comment{color:var(--text2)}
+
+/* Conversation */
+.convo{display:flex;flex-direction:column;gap:1rem}
+.msg{padding:1rem 1.25rem;border-radius:12px;max-width:90%;font-size:.95rem}
+.msg.user{background:var(--surface2);border:1px solid var(--border);align-self:flex-end;color:var(--text)}
+.msg.ai{background:linear-gradient(135deg,rgba(252,76,2,.1),rgba(252,76,2,.05));
+  border:1px solid rgba(252,76,2,.2);align-self:flex-start;color:var(--text)}
+.msg .sender{font-size:.75rem;font-weight:600;color:var(--text2);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em}
+
+/* Features */
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.feature{padding:2rem;border-radius:12px;background:var(--surface);border:1px solid var(--border);transition:all .3s}
+.feature:hover{border-color:var(--accent);transform:translateY(-2px)}
+.feature-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;margin-bottom:1rem}
+.feature h3{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.feature p{font-size:.9rem;color:var(--text2)}
+
+/* CTA */
+.cta{text-align:center;padding:6rem 2rem;background:var(--surface);border-top:1px solid var(--border)}
+.cta h2{font-size:2.5rem;font-weight:800;margin-bottom:1rem}
+.cta p{color:var(--text2);margin-bottom:2rem;font-size:1.1rem}
+.cta-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+/* Footer */
+footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border-top:1px solid var(--border)}
+
+/* Responsive */
+@media(max-width:768px){
+  nav .links{display:none}
+  .stats{gap:2rem;flex-wrap:wrap}
+  .code-section{grid-template-columns:1fr}
+  .feature-grid{grid-template-columns:1fr}
+  .tool-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">strava-mcp<span>-agent</span></div>
+  <div class="links">
+    <a href="#tools">Tools</a>
+    <a href="#setup">Setup</a>
+    <a href="#examples">Examples</a>
+    <a href="https://github.com/koushikmaji31/strava-mcp-agent" class="btn btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+    <a href="https://pypi.org/project/strava-mcp-agent/" class="btn btn-primary">PyPI</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> v0.1.0 on PyPI</div>
+  <h1>Give Claude access to your <span class="highlight">Strava data</span></h1>
+  <p>An MCP server that turns your runs, rides, and swims into tools for AI-powered coaching, analysis, and conversation.</p>
+  <div class="hero-actions">
+    <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install strava-mcp-agent');this.querySelector('.copy').textContent='Copied!'">
+      <span class="dollar">$</span> pip install strava-mcp-agent
+      <span class="copy">Copy</span>
+    </div>
+    <a href="https://github.com/koushikmaji31/strava-mcp-agent" class="btn btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View Source
+    </a>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="num">13</div><div class="label">MCP Tools</div></div>
+  <div class="stat"><div class="num">16+</div><div class="label">Strava Endpoints</div></div>
+  <div class="stat"><div class="num">0</div><div class="label">Config Required</div></div>
+  <div class="stat"><div class="num">OAuth2</div><div class="label">Auto Token Refresh</div></div>
+</div>
+
+<section id="tools">
+  <div class="container">
+    <div class="section-label">Tools</div>
+    <div class="section-title">Everything in your Strava, accessible to Claude</div>
+    <div class="section-desc">13 tools covering activities, segments, routes, gear, and AI-ready coaching summaries.</div>
+    <div class="tool-grid">
+      <div class="tool-card"><div class="tool-name">get_athlete</div><div class="tool-desc">Your profile &mdash; name, weight, FTP, bio, and stats</div></div>
+      <div class="tool-card"><div class="tool-name">get_athlete_stats</div><div class="tool-desc">All-time and recent totals for running, cycling, swimming</div></div>
+      <div class="tool-card"><div class="tool-name">list_activities</div><div class="tool-desc">Browse activities with date range and type filtering</div></div>
+      <div class="tool-card"><div class="tool-name">get_activity</div><div class="tool-desc">Full detail &mdash; splits, HR, cadence, weather, device</div></div>
+      <div class="tool-card"><div class="tool-name">get_activity_zones</div><div class="tool-desc">Heart-rate and power zone distribution</div></div>
+      <div class="tool-card"><div class="tool-name">get_activity_laps</div><div class="tool-desc">Per-lap pace, HR, and distance breakdown</div></div>
+      <div class="tool-card"><div class="tool-name">get_activity_streams</div><div class="tool-desc">Raw sensor data &mdash; GPS, HR, cadence, watts, altitude</div></div>
+      <div class="tool-card"><div class="tool-name">get_starred_segments</div><div class="tool-desc">All your starred segments at a glance</div></div>
+      <div class="tool-card"><div class="tool-name">get_segment_efforts</div><div class="tool-desc">Every effort on a specific segment</div></div>
+      <div class="tool-card"><div class="tool-name">get_routes</div><div class="tool-desc">Routes you've created on Strava</div></div>
+      <div class="tool-card"><div class="tool-name">get_gear</div><div class="tool-desc">Shoe and bike details with mileage tracking</div></div>
+      <div class="tool-card"><div class="tool-name">get_clubs</div><div class="tool-desc">Clubs you belong to</div></div>
+      <div class="tool-card"><div class="tool-name">get_running_summary</div><div class="tool-desc">AI-ready coaching summary &mdash; weekly mileage, pace trends, best efforts, HR stats</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="examples" style="background:var(--surface)">
+  <div class="container">
+    <div class="section-label">In Action</div>
+    <div class="section-title">Talk to your training data</div>
+    <div class="section-desc">Just ask Claude naturally. It fetches the data, does the math, and gives you coaching insights.</div>
+    <div class="convo">
+      <div class="msg user"><div class="sender">You</div>How's my running been this month? Am I improving?</div>
+      <div class="msg ai"><div class="sender">Claude</div>Looking at your data from the past 4 weeks, you've logged <strong>12 runs totaling 87.3 km</strong>. Your average pace improved from 5:42/km to 5:21/km, and your resting HR on easy runs dropped by 4 bpm. Your best 5K effort this month was <strong>24:18</strong> &mdash; a 32-second PR. You're trending in the right direction. I'd suggest adding one more easy run per week to build your aerobic base further.</div>
+      <div class="msg user"><div class="sender">You</div>Which of my shoes has the most miles?</div>
+      <div class="msg ai"><div class="sender">Claude</div>Your <strong>Nike Pegasus 40</strong> has 847 km on them. Most running shoes are designed for 500&ndash;800 km &mdash; you might want to consider replacing them soon to avoid injury risk from worn-out cushioning.</div>
+      <div class="msg user"><div class="sender">You</div>Compare my heart rate zones on my last tempo run vs my long run</div>
+      <div class="msg ai"><div class="sender">Claude</div>Your tempo run (Tuesday) spent 68% of the time in Zone 4 (threshold) with avg HR 172. Your long run (Saturday) was mostly Zone 2 (72%) with avg HR 142. That's a solid distribution &mdash; your easy runs are actually easy, and your hard runs are hard. Good polarization.</div>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="container">
+    <div class="section-label">Quick Start</div>
+    <div class="section-title">Running in 3 minutes</div>
+    <div class="section-desc">Install, configure your Strava credentials, and start talking to your data.</div>
+    <div class="code-section">
+      <div>
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">1. Install from PyPI</h3>
+          <p style="color:var(--text2);font-size:.9rem">One command. No extra dependencies to manage.</p>
+        </div>
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">2. Get Strava API credentials</h3>
+          <p style="color:var(--text2);font-size:.9rem">Create an app at <a href="https://www.strava.com/settings/api">strava.com/settings/api</a> and run <code style="background:var(--surface2);padding:.15rem .4rem;border-radius:4px;font-size:.85rem">python get_token.py</code></p>
+        </div>
+        <div>
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">3. Add to Claude Desktop</h3>
+          <p style="color:var(--text2);font-size:.9rem">Drop the config into your Claude Desktop settings and restart.</p>
+        </div>
+      </div>
+      <div class="code-block">
+        <div class="code-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:.5rem">claude_desktop_config.json</span></div>
+        <div class="code-body">
+{<br>
+&nbsp;&nbsp;<span class="key">"mcpServers"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"strava"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"command"</span>: <span class="str">"strava-mcp"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"env"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_CLIENT_ID"</span>: <span class="str">"your_id"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_CLIENT_SECRET"</span>: <span class="str">"your_secret"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_REFRESH_TOKEN"</span>: <span class="str">"your_token"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-label">Why</div>
+    <div class="section-title">Built for athletes who use AI</div>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(252,76,2,.15);color:var(--accent)">&#9889;</div>
+        <h3>Real-time data</h3>
+        <p>OAuth2 token auto-refresh. Always current, never stale credentials.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(34,197,94,.15);color:var(--green)">&#127939;</div>
+        <h3>Coaching-ready</h3>
+        <p>The running summary tool computes weekly mileage, pace trends, best efforts, and HR stats in one call.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(59,130,246,.15);color:var(--blue)">&#128274;</div>
+        <h3>Secure by default</h3>
+        <p>Credentials loaded from environment variables only. Never hardcoded, never logged.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(168,85,247,.15);color:var(--purple)">&#128640;</div>
+        <h3>Zero config server</h3>
+        <p>Single command to run. Works with Claude Desktop, Claude Code, or any MCP client.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(252,76,2,.15);color:var(--accent)">&#128200;</div>
+        <h3>Raw sensor streams</h3>
+        <p>GPS, heart rate, cadence, power, altitude &mdash; every data point your device recorded.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(34,197,94,.15);color:var(--green)">&#128736;</div>
+        <h3>Full Strava API</h3>
+        <p>Activities, segments, routes, gear, clubs &mdash; if Strava has it, Claude can access it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Start training with AI</h2>
+  <p>Install in seconds. Ask Claude about your runs in minutes.</p>
+  <div class="cta-actions">
+    <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install strava-mcp-agent');this.querySelector('.copy').textContent='Copied!'">
+      <span class="dollar">$</span> pip install strava-mcp-agent
+      <span class="copy">Copy</span>
+    </div>
+    <a href="https://github.com/koushikmaji31/strava-mcp-agent" class="btn btn-ghost">View on GitHub</a>
+  </div>
+</section>
+
+<footer>
+  <p>Made by <a href="https://github.com/koushikmaji31">Koushik Maji</a> &middot; MIT License &middot; <a href="https://pypi.org/project/strava-mcp-agent/">PyPI</a></p>
+</footer>
+
+</body>
+</html>
