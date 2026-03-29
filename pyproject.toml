@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "strava-mcp-agent"
+version = "0.1.0"
+description = "MCP server that exposes your Strava athletic data as tools for Claude and other LLMs"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Koushik Maji" },
+]
+keywords = ["mcp", "strava", "claude", "llm", "running", "cycling", "fitness"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/strava_mcp"]
+
+[project.scripts]
+strava-mcp = "strava_mcp.server:run"
+
+[project.urls]
+Homepage = "https://github.com/koushikmaji/strava-mcp"
+Repository = "https://github.com/koushikmaji/strava-mcp"
+Issues = "https://github.com/koushikmaji/strava-mcp/issues"
