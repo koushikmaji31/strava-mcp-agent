@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "strava-mcp-agent"
-version = "0.1.3"
+version = "0.2.0"
 description = "MCP server that exposes your Strava athletic data as tools for Claude and other LLMs"
 readme = "README.md"
 license = {text = "MIT"}

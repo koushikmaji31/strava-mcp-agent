@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Strava MCP Server — Full Data Access
-Exposes all Strava data as tools for Claude to use.
+Strava MCP Server — Full Data Access + Persistent Memory
+Exposes all Strava data as tools for Claude to use, with athlete context
+that persists across sessions.
 
 Required environment variables:
   STRAVA_CLIENT_ID
@@ -22,6 +23,9 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp import types
 
+from strava_mcp.memory import StravaMemoryStore
+from strava_mcp.trends import build_fitness_metrics
+
 # ── Strava OAuth config ──────────────────────────────────────────────────────
 
 BASE_URL = "https://www.strava.com/api/v3"
@@ -29,6 +33,10 @@ TOKEN_URL = "https://www.strava.com/oauth/token"
 
 _access_token: str | None = None
 _token_expiry: float = 0.0
+
+# ── Memory store ─────────────────────────────────────────────────────────────
+
+memory = StravaMemoryStore()
 
 
 def _get_credentials() -> tuple[str, str, str]:
@@ -72,9 +80,41 @@ def strava_get(path: str, params: dict | None = None) -> Any:
     return resp.json()
 
 
+# ── Auto-update trends ───────────────────────────────────────────────────────
+
+def _maybe_refresh_trends(activities: list[dict]) -> None:
+    """Refresh fitness_metrics if stale, using fetched activities as input."""
+    if not memory.is_stale("fitness_metrics", max_age_hours=24):
+        return
+    runs = [a for a in activities if a.get("type") == "Run"]
+    if not runs:
+        return
+    profile = memory.read("athlete_profile")
+    hr_zones = profile.get("hr_zones") or None
+    metrics = build_fitness_metrics(runs, hr_zones)
+    memory.write("fitness_metrics", metrics)
+
+
+def _fetch_and_refresh_trends() -> None:
+    """Fetch last 12 weeks of activities from Strava and recompute trends."""
+    after_dt = datetime.now(timezone.utc) - timedelta(weeks=12)
+    activities = strava_get("/athlete/activities", {
+        "after": int(after_dt.timestamp()),
+        "per_page": 200,
+    })
+    runs = [a for a in activities if a.get("type") == "Run"]
+    if not runs:
+        return
+    profile = memory.read("athlete_profile")
+    hr_zones = profile.get("hr_zones") or None
+    metrics = build_fitness_metrics(runs, hr_zones)
+    memory.write("fitness_metrics", metrics)
+
+
 # ── Tool definitions ─────────────────────────────────────────────────────────
 
 TOOLS = [
+    # ── Strava data tools ────────────────────────────────────────────────
     types.Tool(
         name="get_athlete",
         description="Get the authenticated athlete's full profile (name, weight, FTP, stats, clubs).",
@@ -198,6 +238,90 @@ TOOLS = [
             },
         },
     ),
+
+    # ── Memory / context tools ───────────────────────────────────────────
+    types.Tool(
+        name="get_athlete_context",
+        description=(
+            "CALL THIS FIRST in every coaching conversation. Returns the athlete's "
+            "persistent training context: HR zones, current Z2 pace, weekly mileage "
+            "trends, Z2 pace progression, goals, injuries, and coaching notes. "
+            "Auto-refreshes fitness metrics if stale (>3 days)."
+        ),
+        inputSchema={"type": "object", "properties": {}},
+    ),
+    types.Tool(
+        name="update_athlete_profile",
+        description=(
+            "Update the athlete's profile: max HR, resting HR, weight, FTP, HR zones, "
+            "or coaching notes. Only provide fields you want to change."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "max_hr": {"type": "integer", "description": "Maximum heart rate"},
+                "resting_hr": {"type": "integer", "description": "Resting heart rate"},
+                "weight_kg": {"type": "number", "description": "Body weight in kg"},
+                "ftp_watts": {"type": "integer", "description": "Functional Threshold Power"},
+                "hr_zones": {
+                    "type": "object",
+                    "description": (
+                        "HR zones as {z1: [low, high], z2: [low, high], ...}. "
+                        "Example: {z1: [0, 130], z2: [130, 152], z3: [152, 162], z4: [162, 172], z5: [172, 999]}"
+                    ),
+                },
+                "notes": {"type": "string", "description": "General coaching notes about the athlete"},
+            },
+        },
+    ),
+    types.Tool(
+        name="update_athlete_goals",
+        description="Update training goals, race calendar, or current training phase.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "primary_goal": {"type": "string", "description": "Main training goal (e.g. 'Sub-50 10k by June')"},
+                "race_calendar": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": "List of upcoming races: [{name, date, target}]",
+                },
+                "training_phase": {"type": "string", "description": "Current phase: base building, build, peak, taper, recovery"},
+                "notes": {"type": "string", "description": "Additional goal notes"},
+            },
+        },
+    ),
+    types.Tool(
+        name="update_athlete_injuries",
+        description="Track current injuries and recovery. Add new injuries, update status, or mark as resolved.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["add", "update", "resolve"],
+                    "description": "add: new injury, update: change status/notes, resolve: mark as healed",
+                },
+                "area": {"type": "string", "description": "Body area (e.g. 'left knee', 'right achilles')"},
+                "status": {"type": "string", "description": "Current status (e.g. 'monitoring', 'recovering', 'pain-free')"},
+                "notes": {"type": "string", "description": "Details about the injury"},
+                "since": {"type": "string", "description": "When the injury started (ISO date)"},
+            },
+            "required": ["action", "area"],
+        },
+    ),
+    types.Tool(
+        name="add_training_note",
+        description="Add a coaching note or observation that persists across sessions. Keeps last 50 entries.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "note": {"type": "string", "description": "The training note or observation"},
+                "date": {"type": "string", "description": "Date for this note (ISO date, defaults to today)"},
+            },
+            "required": ["note"],
+        },
+    ),
 ]
 
 
@@ -274,6 +398,93 @@ def _build_running_summary(runs: list[dict], weeks: int) -> dict:
     return summary
 
 
+# ── Memory tool handlers ─────────────────────────────────────────────────────
+
+def _handle_get_athlete_context() -> list[types.TextContent]:
+    """Load full athlete context. Auto-refresh trends if stale."""
+    if memory.is_stale("fitness_metrics", max_age_hours=72):
+        try:
+            _fetch_and_refresh_trends()
+        except Exception:
+            pass  # return stale data rather than failing
+
+    ctx = memory.read_all_context()
+
+    # Add a hint about zones being defaults
+    profile = ctx.get("athlete_profile", {})
+    if not profile.get("hr_zones"):
+        ctx["_hint"] = (
+            "HR zones are not configured. Using defaults (Z2: 130-152 bpm). "
+            "Ask the athlete for their max HR or lactate threshold to set accurate zones "
+            "via update_athlete_profile."
+        )
+
+    return _json_out(ctx)
+
+
+def _handle_update_athlete_profile(arguments: dict) -> list[types.TextContent]:
+    fields = {k: v for k, v in arguments.items() if v is not None}
+    updated = memory.merge("athlete_profile", fields)
+    # If zones changed, invalidate fitness metrics so they recompute with new zones
+    if "hr_zones" in fields:
+        try:
+            _fetch_and_refresh_trends()
+        except Exception:
+            pass
+    return _json_out({"status": "updated", "athlete_profile": updated})
+
+
+def _handle_update_athlete_goals(arguments: dict) -> list[types.TextContent]:
+    fields = {k: v for k, v in arguments.items() if v is not None}
+    updated = memory.merge("goals", fields)
+    return _json_out({"status": "updated", "goals": updated})
+
+
+def _handle_update_athlete_injuries(arguments: dict) -> list[types.TextContent]:
+    action = arguments["action"]
+    area = arguments["area"]
+    injuries = memory.read("injuries")
+
+    if action == "add":
+        injuries["current"].append({
+            "area": area,
+            "status": arguments.get("status", "monitoring"),
+            "since": arguments.get("since", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+            "notes": arguments.get("notes", ""),
+        })
+    elif action == "update":
+        for entry in injuries["current"]:
+            if entry["area"].lower() == area.lower():
+                if arguments.get("status"):
+                    entry["status"] = arguments["status"]
+                if arguments.get("notes"):
+                    entry["notes"] = arguments["notes"]
+                break
+    elif action == "resolve":
+        resolved_entry = None
+        injuries["current"] = [
+            e for e in injuries["current"]
+            if e["area"].lower() != area.lower() or (resolved_entry := e) is None
+        ]
+        if resolved_entry:
+            resolved_entry["resolved_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            resolved_entry["status"] = "resolved"
+            injuries["resolved"].append(resolved_entry)
+
+    memory.write("injuries", injuries)
+    return _json_out({"status": "updated", "injuries": injuries})
+
+
+def _handle_add_training_note(arguments: dict) -> list[types.TextContent]:
+    note_date = arguments.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    notes = memory.read("training_notes")
+    notes["entries"].append({"date": note_date, "note": arguments["note"]})
+    # Keep only the last 50 entries
+    notes["entries"] = notes["entries"][-50:]
+    memory.write("training_notes", notes)
+    return _json_out({"status": "added", "total_notes": len(notes["entries"])})
+
+
 # ── MCP Server ───────────────────────────────────────────────────────────────
 
 server = Server("strava-mcp")
@@ -286,6 +497,20 @@ async def list_tools() -> list[types.Tool]:
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
+
+    # ── Memory tools ─────────────────────────────────────────────────────
+    if name == "get_athlete_context":
+        return _handle_get_athlete_context()
+    if name == "update_athlete_profile":
+        return _handle_update_athlete_profile(arguments)
+    if name == "update_athlete_goals":
+        return _handle_update_athlete_goals(arguments)
+    if name == "update_athlete_injuries":
+        return _handle_update_athlete_injuries(arguments)
+    if name == "add_training_note":
+        return _handle_add_training_note(arguments)
+
+    # ── Strava data tools ────────────────────────────────────────────────
 
     # Simple GET endpoints
     simple_routes = {
@@ -307,7 +532,9 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
         for key in ("before", "after"):
             if key in arguments:
                 params[key] = int(datetime.fromisoformat(arguments[key]).timestamp())
-        return _json_out(strava_get("/athlete/activities", params))
+        activities = strava_get("/athlete/activities", params)
+        _maybe_refresh_trends(activities)  # auto-update trends
+        return _json_out(activities)
 
     if name == "get_activity":
         return _json_out(strava_get(f"/activities/{arguments['activity_id']}"))
@@ -351,6 +578,7 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             "per_page": 200,
         })
         runs = [a for a in activities if a.get("type") == "Run"]
+        _maybe_refresh_trends(activities)  # auto-update trends
         return _json_out(_build_running_summary(runs, weeks))
 
     return [types.TextContent(type="text", text=f"Unknown tool: {name}")]
