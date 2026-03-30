@@ -24,22 +24,46 @@
 | `get_clubs` | Clubs you belong to |
 | `get_running_summary` | AI-ready coaching summary (weekly mileage, pace trends, best efforts, HR stats) |
 
-## Quick Start (2 commands)
+## Quick Start
+
+### Step 1: Install
 
 ```bash
 pip install strava-mcp-agent
+```
+
+### Step 2: Create a Strava API app (one time)
+
+Go to [strava.com/settings/api](https://www.strava.com/settings/api) and fill in:
+
+| Field | What to enter |
+|-------|---------------|
+| **Application Name** | Anything (e.g. `My Claude MCP`) |
+| **Category** | Pick any |
+| **Club** | Leave blank |
+| **Website** | `http://localhost` |
+| **Authorization Callback Domain** | `localhost` |
+
+> The callback domain **must** be `localhost` — this is what allows the setup wizard to receive the authorization code on your machine.
+
+Click **Create**. On the next page, copy your **Client ID** (a number like `123456`) and **Client Secret** (a long code like `abc123def456...`).
+
+### Step 3: Run the setup wizard
+
+```bash
 strava-mcp-token
 ```
 
-That's it. The setup wizard will:
-
-1. Ask for your Strava API credentials ([create an app here](https://www.strava.com/settings/api) first — set callback domain to `localhost`)
-2. Open your browser for Strava authorization
+It will:
+1. Ask for your Client ID and Client Secret
+2. Open your browser — click **Authorize** on the Strava page
 3. Auto-detect your OS (macOS / Linux / Windows)
 4. Find the Python that has the package installed
-5. Write the Claude Desktop config for you
+5. Write the Claude Desktop config file for you
 
-Just restart Claude Desktop and your 13 Strava tools are ready.
+### Step 4: Restart Claude Desktop
+
+That's it. Your 13 Strava tools are ready. Just ask Claude about your runs.
 
 ### Manual setup (if you prefer)
 

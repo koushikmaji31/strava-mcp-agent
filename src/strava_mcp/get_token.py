@@ -77,7 +77,15 @@ def _update_claude_config(client_id: str, client_secret: str, refresh_token: str
 def main():
     print("\n=== Strava MCP Setup ===\n")
     print("Step 1: Go to https://www.strava.com/settings/api and create an app")
-    print("        (set Authorization Callback Domain to: localhost)\n")
+    print()
+    print("  Fill in these fields:")
+    print("    Application Name ......... anything (e.g. 'My Claude MCP')")
+    print("    Category ................. pick any")
+    print("    Club ..................... leave blank")
+    print("    Website .................. http://localhost")
+    print("    Callback Domain .......... localhost   <-- important!")
+    print()
+    print("  Click Create, then copy your Client ID and Client Secret.\n")
 
     CLIENT_ID = input("Enter your Strava CLIENT_ID: ").strip()
     CLIENT_SECRET = input("Enter your Strava CLIENT_SECRET: ").strip()

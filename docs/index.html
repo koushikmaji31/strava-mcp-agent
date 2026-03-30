@@ -222,11 +222,25 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
           <p style="color:var(--text2);font-size:.9rem">One command. No extra dependencies to manage.</p>
         </div>
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:1.1rem;margin-bottom:.5rem">2. Run the setup wizard</h3>
-          <p style="color:var(--text2);font-size:.9rem">Create an app at <a href="https://www.strava.com/settings/api">strava.com/settings/api</a>, then run the token command. It handles OAuth, detects your OS, finds your Python, and writes the Claude Desktop config automatically.</p>
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">2. Create a Strava API app (one time)</h3>
+          <div style="color:var(--text2);font-size:.9rem;line-height:1.7">
+            <p style="margin-bottom:.5rem">Go to <a href="https://www.strava.com/settings/api">strava.com/settings/api</a> and fill in:</p>
+            <table style="width:100%;border-collapse:collapse;margin:.5rem 0 .75rem;font-size:.85rem">
+              <tr><td style="padding:.3rem .5rem;border:1px solid var(--border);color:var(--text)">Application Name</td><td style="padding:.3rem .5rem;border:1px solid var(--border)">Anything (e.g. <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:3px">My Claude MCP</code>)</td></tr>
+              <tr><td style="padding:.3rem .5rem;border:1px solid var(--border);color:var(--text)">Category</td><td style="padding:.3rem .5rem;border:1px solid var(--border)">Pick any</td></tr>
+              <tr><td style="padding:.3rem .5rem;border:1px solid var(--border);color:var(--text)">Club</td><td style="padding:.3rem .5rem;border:1px solid var(--border)">Leave blank</td></tr>
+              <tr><td style="padding:.3rem .5rem;border:1px solid var(--border);color:var(--text)">Website</td><td style="padding:.3rem .5rem;border:1px solid var(--border)"><code style="background:var(--surface2);padding:.1rem .3rem;border-radius:3px">http://localhost</code></td></tr>
+              <tr><td style="padding:.3rem .5rem;border:1px solid var(--border);color:var(--text)">Authorization Callback Domain</td><td style="padding:.3rem .5rem;border:1px solid var(--border)"><code style="background:var(--surface2);padding:.1rem .3rem;border-radius:3px;color:var(--green)">localhost</code> &larr; important!</td></tr>
+            </table>
+            <p>Click <strong>Create</strong>. Copy your <strong>Client ID</strong> (a number) and <strong>Client Secret</strong> (a long code) from the next page.</p>
+          </div>
+        </div>
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">3. Run the setup wizard</h3>
+          <p style="color:var(--text2);font-size:.9rem">Run <code style="background:var(--surface2);padding:.15rem .4rem;border-radius:4px;font-size:.85rem;color:var(--green)">strava-mcp-token</code> in your terminal. It will ask for your Client ID and Secret, open your browser to authorize with Strava, then <strong>automatically configure Claude Desktop</strong> &mdash; detects your OS, finds the right Python, and writes the config file for you.</p>
         </div>
         <div>
-          <h3 style="font-size:1.1rem;margin-bottom:.5rem">3. Restart Claude Desktop</h3>
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">4. Restart Claude Desktop</h3>
           <p style="color:var(--text2);font-size:.9rem">That's it. Your 13 Strava tools are ready to use.</p>
         </div>
       </div>
