@@ -9,3 +9,4 @@ build/
 .venv/
 venv/
 claude_playground/
+.DS_Store

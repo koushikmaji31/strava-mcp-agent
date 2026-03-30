@@ -149,7 +149,7 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
 </nav>
 
 <section class="hero">
-  <div class="badge"><span class="dot"></span> v0.1.0 on PyPI</div>
+  <div class="badge"><span class="dot"></span> v0.1.3 on PyPI</div>
   <h1>Give Claude access to your <span class="highlight">Strava data</span></h1>
   <p>An MCP server that turns your runs, rides, and swims into tools for AI-powered coaching, analysis, and conversation.</p>
   <div class="hero-actions">
@@ -167,7 +167,7 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
 <div class="stats">
   <div class="stat"><div class="num">13</div><div class="label">MCP Tools</div></div>
   <div class="stat"><div class="num">16+</div><div class="label">Strava Endpoints</div></div>
-  <div class="stat"><div class="num">0</div><div class="label">Config Required</div></div>
+  <div class="stat"><div class="num">1 cmd</div><div class="label">Auto Setup</div></div>
   <div class="stat"><div class="num">OAuth2</div><div class="label">Auto Token Refresh</div></div>
 </div>
 
@@ -213,8 +213,8 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
 <section id="setup">
   <div class="container">
     <div class="section-label">Quick Start</div>
-    <div class="section-title">Running in 3 minutes</div>
-    <div class="section-desc">Install, configure your Strava credentials, and start talking to your data.</div>
+    <div class="section-title">Running in 2 commands</div>
+    <div class="section-desc">Install, run the setup wizard, and you're done. It auto-configures Claude Desktop for you.</div>
     <div class="code-section">
       <div>
         <div style="margin-bottom:2rem">
@@ -222,29 +222,34 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
           <p style="color:var(--text2);font-size:.9rem">One command. No extra dependencies to manage.</p>
         </div>
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:1.1rem;margin-bottom:.5rem">2. Get Strava API credentials</h3>
-          <p style="color:var(--text2);font-size:.9rem">Create an app at <a href="https://www.strava.com/settings/api">strava.com/settings/api</a> and run <code style="background:var(--surface2);padding:.15rem .4rem;border-radius:4px;font-size:.85rem">python get_token.py</code></p>
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">2. Run the setup wizard</h3>
+          <p style="color:var(--text2);font-size:.9rem">Create an app at <a href="https://www.strava.com/settings/api">strava.com/settings/api</a>, then run the token command. It handles OAuth, detects your OS, finds your Python, and writes the Claude Desktop config automatically.</p>
         </div>
         <div>
-          <h3 style="font-size:1.1rem;margin-bottom:.5rem">3. Add to Claude Desktop</h3>
-          <p style="color:var(--text2);font-size:.9rem">Drop the config into your Claude Desktop settings and restart.</p>
+          <h3 style="font-size:1.1rem;margin-bottom:.5rem">3. Restart Claude Desktop</h3>
+          <p style="color:var(--text2);font-size:.9rem">That's it. Your 13 Strava tools are ready to use.</p>
         </div>
       </div>
       <div class="code-block">
-        <div class="code-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:.5rem">claude_desktop_config.json</span></div>
+        <div class="code-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:.5rem">Terminal</span></div>
         <div class="code-body">
-{<br>
-&nbsp;&nbsp;<span class="key">"mcpServers"</span>: {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"strava"</span>: {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"command"</span>: <span class="str">"strava-mcp"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"env"</span>: {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_CLIENT_ID"</span>: <span class="str">"your_id"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_CLIENT_SECRET"</span>: <span class="str">"your_secret"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"STRAVA_REFRESH_TOKEN"</span>: <span class="str">"your_token"</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;}<br>
-}
+<span class="comment"># Install</span><br>
+<span class="dollar" style="color:var(--text2)">$</span> <span class="str">pip install strava-mcp-agent</span><br>
+<br>
+<span class="comment"># Setup wizard &mdash; handles everything</span><br>
+<span class="dollar" style="color:var(--text2)">$</span> <span class="str">strava-mcp-token</span><br>
+<br>
+<span style="color:var(--text2)">=== Strava MCP Setup ===</span><br>
+<br>
+<span style="color:var(--text2)">Enter your Strava CLIENT_ID:</span> <span class="str">123456</span><br>
+<span style="color:var(--text2)">Enter your Strava CLIENT_SECRET:</span> <span class="str">abc...</span><br>
+<br>
+<span style="color:var(--text2)">Opening browser for authorization...</span><br>
+<span style="color:var(--green)">Authorized as: Koushik Maji</span><br>
+<br>
+<span style="color:var(--text2)">Configuring Claude Desktop...</span><br>
+<span style="color:var(--green)">Config written to: ~/Library/.../claude_desktop_config.json</span><br>
+<span style="color:var(--green)">All done! Restart Claude Desktop.</span>
         </div>
       </div>
     </div>
@@ -273,8 +278,8 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
       </div>
       <div class="feature">
         <div class="feature-icon" style="background:rgba(168,85,247,.15);color:var(--purple)">&#128640;</div>
-        <h3>Zero config server</h3>
-        <p>Single command to run. Works with Claude Desktop, Claude Code, or any MCP client.</p>
+        <h3>Auto-setup wizard</h3>
+        <p>One command configures everything &mdash; detects your OS, finds Python, writes Claude Desktop config. Mac, Linux, and Windows.</p>
       </div>
       <div class="feature">
         <div class="feature-icon" style="background:rgba(252,76,2,.15);color:var(--accent)">&#128200;</div>

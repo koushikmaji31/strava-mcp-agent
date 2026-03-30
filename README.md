@@ -1,4 +1,4 @@
-# strava-mcp
+# strava-mcp-agent
 
 **Give Claude access to your Strava data.** An MCP server that exposes your runs, rides, swims, and all Strava metrics as tools for AI-powered coaching, analysis, and conversation.
 
@@ -6,7 +6,7 @@
 
 ## What it does
 
-`strava-mcp` connects your Strava account to any MCP-compatible client (Claude Desktop, Claude Code, etc.) and provides **13 tools** covering every aspect of your athletic data:
+`strava-mcp-agent` connects your Strava account to any MCP-compatible client (Claude Desktop, Claude Code, etc.) and provides **13 tools** covering every aspect of your athletic data:
 
 | Tool | Description |
 |------|-------------|
@@ -24,47 +24,33 @@
 | `get_clubs` | Clubs you belong to |
 | `get_running_summary` | AI-ready coaching summary (weekly mileage, pace trends, best efforts, HR stats) |
 
-## Installation
+## Quick Start (2 commands)
 
 ```bash
-pip install strava-mcp
+pip install strava-mcp-agent
+strava-mcp-token
 ```
 
-Or install from source:
+That's it. The setup wizard will:
 
-```bash
-git clone https://github.com/koushikmaji/strava-mcp.git
-cd strava-mcp
-pip install -e .
-```
+1. Ask for your Strava API credentials ([create an app here](https://www.strava.com/settings/api) first — set callback domain to `localhost`)
+2. Open your browser for Strava authorization
+3. Auto-detect your OS (macOS / Linux / Windows)
+4. Find the Python that has the package installed
+5. Write the Claude Desktop config for you
 
-## Setup
+Just restart Claude Desktop and your 13 Strava tools are ready.
 
-### 1. Create a Strava API Application
+### Manual setup (if you prefer)
 
-1. Go to [https://www.strava.com/settings/api](https://www.strava.com/settings/api)
-2. Create an application (use `http://localhost:8888/callback` as the redirect URI)
-3. Note your **Client ID** and **Client Secret**
+<details>
+<summary>Click to expand</summary>
 
-### 2. Get Your Refresh Token
+Add to your Claude Desktop config:
 
-```bash
-python get_token.py
-```
-
-This opens a browser for Strava authorization and returns your refresh token.
-
-### 3. Set Environment Variables
-
-```bash
-export STRAVA_CLIENT_ID="your_client_id"
-export STRAVA_CLIENT_SECRET="your_client_secret"
-export STRAVA_REFRESH_TOKEN="your_refresh_token"
-```
-
-### 4. Configure Claude Desktop
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -81,23 +67,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-Or run with Python directly:
-
-```json
-{
-  "mcpServers": {
-    "strava": {
-      "command": "python",
-      "args": ["-m", "strava_mcp"],
-      "env": {
-        "STRAVA_CLIENT_ID": "your_client_id",
-        "STRAVA_CLIENT_SECRET": "your_client_secret",
-        "STRAVA_REFRESH_TOKEN": "your_refresh_token"
-      }
-    }
-  }
-}
-```
+</details>
 
 ## Usage Examples
 

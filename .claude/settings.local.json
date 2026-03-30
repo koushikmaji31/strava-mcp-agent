@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/koushikmaji31/Desktop/terminal_mcp/src/terminal_mcp)",
+      "Bash(mkdir -p /Users/koushikmaji31/Desktop/strava_mcp/src/strava_mcp)",
+      "Bash(python -c \"import tomllib; t=tomllib.load\\(open\\(''pyproject.toml'',''rb''\\)\\); print\\(f\"\"Package: {t[''project''][''name'']} v{t[''project''][''version'']}\"\"\\)\")",
+      "Bash(ls /Users/koushikmaji31/Desktop/strava_mcp/*.toml /Users/koushikmaji31/Desktop/strava_mcp/*.md /Users/koushikmaji31/Desktop/strava_mcp/LICENSE)",
+      "Bash(ls /Users/koushikmaji31/Desktop/terminal_mcp/*.toml /Users/koushikmaji31/Desktop/terminal_mcp/*.md /Users/koushikmaji31/Desktop/terminal_mcp/LICENSE)",
+      "Bash(chmod 600 ~/.pypirc)",
+      "Bash(twine upload:*)",
+      "Bash(python -m build)"
+    ]
+  }
+}
