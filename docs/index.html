@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>strava-mcp-agent - Give Claude Access to Your Strava Data</title>
-<meta name="description" content="MCP server that exposes your Strava athletic data as tools for Claude and other LLMs. 13 tools for runs, rides, swims, coaching analysis.">
+<meta name="description" content="MCP server with persistent memory that exposes your Strava athletic data as tools for Claude. 18 tools for runs, rides, coaching analysis with cross-session context.">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -149,9 +149,9 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
 </nav>
 
 <section class="hero">
-  <div class="badge"><span class="dot"></span> v0.1.3 on PyPI</div>
-  <h1>Give Claude access to your <span class="highlight">Strava data</span></h1>
-  <p>An MCP server that turns your runs, rides, and swims into tools for AI-powered coaching, analysis, and conversation.</p>
+  <div class="badge"><span class="dot"></span> v0.2.0 on PyPI</div>
+  <h1>Your AI running coach that <span class="highlight">actually remembers</span></h1>
+  <p>An MCP server with persistent memory that connects your Strava data to Claude. It tracks your zones, pace trends, injuries, and goals across sessions &mdash; so coaching advice stays current.</p>
   <div class="hero-actions">
     <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install strava-mcp-agent');this.querySelector('.copy').textContent='Copied!'">
       <span class="dollar">$</span> pip install strava-mcp-agent
@@ -165,17 +165,28 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
 </section>
 
 <div class="stats">
-  <div class="stat"><div class="num">13</div><div class="label">MCP Tools</div></div>
-  <div class="stat"><div class="num">16+</div><div class="label">Strava Endpoints</div></div>
+  <div class="stat"><div class="num">18</div><div class="label">MCP Tools</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">Memory Tools</div></div>
   <div class="stat"><div class="num">1 cmd</div><div class="label">Auto Setup</div></div>
-  <div class="stat"><div class="num">OAuth2</div><div class="label">Auto Token Refresh</div></div>
+  <div class="stat"><div class="num">&infin;</div><div class="label">Cross-Session Context</div></div>
 </div>
 
 <section id="tools">
   <div class="container">
     <div class="section-label">Tools</div>
-    <div class="section-title">Everything in your Strava, accessible to Claude</div>
-    <div class="section-desc">13 tools covering activities, segments, routes, gear, and AI-ready coaching summaries.</div>
+    <div class="section-title">18 tools &mdash; data + memory</div>
+    <div class="section-desc">13 Strava data tools + 5 persistent memory tools that give Claude context across every conversation.</div>
+
+    <div class="section-label" style="margin-top:2rem">Memory &amp; Context</div>
+    <div class="tool-grid" style="margin-bottom:2.5rem">
+      <div class="tool-card" style="border-left:3px solid var(--purple)"><div class="tool-name" style="color:var(--purple)">get_athlete_context</div><div class="tool-desc">Loads your full training profile at conversation start &mdash; HR zones, current Z2 pace, weekly mileage trends, goals, injuries, coaching notes. Auto-refreshes if stale.</div></div>
+      <div class="tool-card" style="border-left:3px solid var(--purple)"><div class="tool-name" style="color:var(--purple)">update_athlete_profile</div><div class="tool-desc">Save your max HR, resting HR, weight, FTP, and custom HR zones. Claude uses this to compute accurate training paces.</div></div>
+      <div class="tool-card" style="border-left:3px solid var(--purple)"><div class="tool-name" style="color:var(--purple)">update_athlete_goals</div><div class="tool-desc">Track race targets (e.g. sub-50 10K), training phase, and deadlines so coaching stays goal-oriented.</div></div>
+      <div class="tool-card" style="border-left:3px solid var(--purple)"><div class="tool-name" style="color:var(--purple)">update_athlete_injuries</div><div class="tool-desc">Log current injuries, update recovery status, or mark as resolved. Claude adjusts prescriptions accordingly.</div></div>
+      <div class="tool-card" style="border-left:3px solid var(--purple)"><div class="tool-name" style="color:var(--purple)">add_training_note</div><div class="tool-desc">Persistent coaching notes that carry across sessions. Keeps last 50 entries.</div></div>
+    </div>
+
+    <div class="section-label">Strava Data</div>
     <div class="tool-grid">
       <div class="tool-card"><div class="tool-name">get_athlete</div><div class="tool-desc">Your profile &mdash; name, weight, FTP, bio, and stats</div></div>
       <div class="tool-card"><div class="tool-name">get_athlete_stats</div><div class="tool-desc">All-time and recent totals for running, cycling, swimming</div></div>
@@ -194,18 +205,69 @@ footer{padding:2rem;text-align:center;color:var(--text2);font-size:.85rem;border
   </div>
 </section>
 
-<section id="examples" style="background:var(--surface)">
+<section id="memory" style="background:var(--surface)">
+  <div class="container">
+    <div class="section-label">Persistent Memory</div>
+    <div class="section-title">Claude remembers your training context</div>
+    <div class="section-desc">Without memory, Claude forgets everything between conversations. With strava-mcp-agent, your zones, pace trends, injuries, and goals persist across every session.</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem">
+      <div class="code-block">
+        <div class="code-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:.5rem;color:#ff5f57">Without memory</span></div>
+        <div class="code-body" style="font-family:var(--font);font-size:.9rem;line-height:1.7">
+          <div style="color:var(--text2);margin-bottom:.75rem"><strong style="color:var(--text)">Session 1:</strong> "Your Z2 pace is 9:30/km at 150bpm"</div>
+          <div style="color:var(--text2);margin-bottom:.75rem"><strong style="color:var(--text)">Session 2:</strong> "Your Z2 pace is 8:10/km at 150bpm"</div>
+          <div style="color:#ff5f57"><strong style="color:#ff5f57">Session 3:</strong> "I'd recommend running at 9:00-9:30/km for easy runs" <span style="font-size:.8rem">&larr; wrong! forgot the improvement</span></div>
+        </div>
+      </div>
+      <div class="code-block">
+        <div class="code-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:.5rem;color:var(--green)">With memory</span></div>
+        <div class="code-body" style="font-family:var(--font);font-size:.9rem;line-height:1.7">
+          <div style="color:var(--text2);margin-bottom:.75rem"><strong style="color:var(--text)">Session 1:</strong> Z2 pace saved: 9:30/km</div>
+          <div style="color:var(--text2);margin-bottom:.75rem"><strong style="color:var(--text)">Session 2:</strong> Z2 pace auto-updated: 8:10/km</div>
+          <div style="color:var(--green)"><strong style="color:var(--green)">Session 3:</strong> "Your Z2 pace has improved to 8:10/km &mdash; run at 8:00-8:30 for easy runs" <span style="font-size:.8rem">&check; accurate</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">What gets remembered</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-top:1rem">
+      <div style="padding:1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:.4rem;color:var(--purple)">Fitness Metrics</div>
+        <div style="font-size:.85rem;color:var(--text2)">Z2 pace, weekly mileage, pace trends, cadence &mdash; auto-computed from your Strava data</div>
+      </div>
+      <div style="padding:1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:.4rem;color:var(--purple)">HR Zones</div>
+        <div style="font-size:.85rem;color:var(--text2)">Your personal zones so Claude prescribes the right pace, not generic defaults</div>
+      </div>
+      <div style="padding:1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:.4rem;color:var(--purple)">Goals &amp; Races</div>
+        <div style="font-size:.85rem;color:var(--text2)">Target races, training phase, and deadlines that shape every recommendation</div>
+      </div>
+      <div style="padding:1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:.4rem;color:var(--purple)">Injuries</div>
+        <div style="font-size:.85rem;color:var(--text2)">Active injuries and recovery status so Claude adjusts volume and intensity</div>
+      </div>
+      <div style="padding:1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:.4rem;color:var(--purple)">Coaching Notes</div>
+        <div style="font-size:.85rem;color:var(--text2)">Persistent observations that carry context from session to session</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="examples">
   <div class="container">
     <div class="section-label">In Action</div>
     <div class="section-title">Talk to your training data</div>
     <div class="section-desc">Just ask Claude naturally. It fetches the data, does the math, and gives you coaching insights.</div>
     <div class="convo">
       <div class="msg user"><div class="sender">You</div>How's my running been this month? Am I improving?</div>
-      <div class="msg ai"><div class="sender">Claude</div>Looking at your data from the past 4 weeks, you've logged <strong>12 runs totaling 87.3 km</strong>. Your average pace improved from 5:42/km to 5:21/km, and your resting HR on easy runs dropped by 4 bpm. Your best 5K effort this month was <strong>24:18</strong> &mdash; a 32-second PR. You're trending in the right direction. I'd suggest adding one more easy run per week to build your aerobic base further.</div>
-      <div class="msg user"><div class="sender">You</div>Which of my shoes has the most miles?</div>
-      <div class="msg ai"><div class="sender">Claude</div>Your <strong>Nike Pegasus 40</strong> has 847 km on them. Most running shoes are designed for 500&ndash;800 km &mdash; you might want to consider replacing them soon to avoid injury risk from worn-out cushioning.</div>
+      <div class="msg ai"><div class="sender">Claude</div>Looking at your stored context and recent data: you've logged <strong>12 runs totaling 87.3 km</strong> this month. Your Z2 pace improved from 9:30/km to 8:10/km &mdash; that's significant aerobic development. Your weekly mileage is trending up from 32 to 38 km. Given your sub-50 10K goal in June, you're right on track. I'd suggest bumping your long run to 14 km next week.</div>
+      <div class="msg user"><div class="sender">You</div>My left knee has been sore after tempos</div>
+      <div class="msg ai"><div class="sender">Claude</div>I've logged that as a current injury &mdash; left knee, monitoring status. Given this, I'm adjusting your plan: <strong>skip tempo runs this week</strong>, keep easy runs under 8 km, and focus on flat routes. I'll check in on this next session. If it persists beyond a week, consider seeing a physio.</div>
       <div class="msg user"><div class="sender">You</div>Compare my heart rate zones on my last tempo run vs my long run</div>
-      <div class="msg ai"><div class="sender">Claude</div>Your tempo run (Tuesday) spent 68% of the time in Zone 4 (threshold) with avg HR 172. Your long run (Saturday) was mostly Zone 2 (72%) with avg HR 142. That's a solid distribution &mdash; your easy runs are actually easy, and your hard runs are hard. Good polarization.</div>
+      <div class="msg ai"><div class="sender">Claude</div>Your tempo run (Tuesday) spent 68% in Zone 4 with avg HR 172. Your long run (Saturday) was 72% Zone 2 with avg HR 142 &mdash; right in your configured Z2 range of 130-152. Good polarization. Your easy runs are actually easy.</div>
     </div>
   </div>
 </section>

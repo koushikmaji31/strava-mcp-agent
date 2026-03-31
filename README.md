@@ -1,12 +1,24 @@
 # strava-mcp-agent
 
-**Give Claude access to your Strava data.** An MCP server that exposes your runs, rides, swims, and all Strava metrics as tools for AI-powered coaching, analysis, and conversation.
+**Your AI running coach that actually remembers.** An MCP server with persistent memory that connects your Strava data to Claude — tracking your zones, pace trends, injuries, and goals across sessions so coaching advice stays current.
 
 ---
 
 ## What it does
 
-`strava-mcp-agent` connects your Strava account to any MCP-compatible client (Claude Desktop, Claude Code, etc.) and provides **13 tools** covering every aspect of your athletic data:
+`strava-mcp-agent` gives Claude **18 tools** — 13 for live Strava data and 5 for persistent memory that carries context across every conversation.
+
+### Memory & Context Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_athlete_context` | Loads your full training profile at conversation start — HR zones, current Z2 pace, weekly mileage trends, goals, injuries. Auto-refreshes if stale. |
+| `update_athlete_profile` | Save your max HR, resting HR, weight, FTP, and custom HR zones |
+| `update_athlete_goals` | Track race targets, training phase, and deadlines |
+| `update_athlete_injuries` | Log injuries, update recovery status, mark as resolved |
+| `add_training_note` | Persistent coaching notes across sessions (last 50 kept) |
+
+### Strava Data Tools
 
 | Tool | Description |
 |------|-------------|
@@ -24,15 +36,25 @@
 | `get_clubs` | Clubs you belong to |
 | `get_running_summary` | AI-ready coaching summary (weekly mileage, pace trends, best efforts, HR stats) |
 
-## Quick Start
+### Why memory matters
 
-### Step 1: Install
+Without memory, Claude forgets everything between conversations:
+- Session 1: "Your Z2 pace is 9:30/km"
+- Session 2: "Your Z2 pace improved to 8:10/km"
+- Session 3: "I recommend running at 9:00–9:30/km" ← **wrong**, forgot the improvement
+
+With memory, fitness metrics are auto-computed from your Strava data and persist. Claude always knows your current zones, trends, and injuries.
+
+---
+
+## Quick Start (2 commands)
 
 ```bash
 pip install strava-mcp-agent
+strava-mcp-token
 ```
 
-### Step 2: Create a Strava API app (one time)
+### Step 1: Create a Strava API app (one time)
 
 Go to [strava.com/settings/api](https://www.strava.com/settings/api) and fill in:
 
@@ -48,7 +70,7 @@ Go to [strava.com/settings/api](https://www.strava.com/settings/api) and fill in
 
 Click **Create**. On the next page, copy your **Client ID** (a number like `123456`) and **Client Secret** (a long code like `abc123def456...`).
 
-### Step 3: Run the setup wizard
+### Step 2: Run the setup wizard
 
 ```bash
 strava-mcp-token
@@ -61,9 +83,13 @@ It will:
 4. Find the Python that has the package installed
 5. Write the Claude Desktop config file for you
 
-### Step 4: Restart Claude Desktop
+### Step 3: Restart Claude Desktop
 
-That's it. Your 13 Strava tools are ready. Just ask Claude about your runs.
+Your 18 tools are ready. To get the most out of coaching, start by telling Claude your max HR and goals:
+
+> *"Set my max HR to 190, resting HR 48, and my goal is sub-50 10K by June"*
+
+Claude will save this and use it to compute accurate training zones from then on.
 
 ### Manual setup (if you prefer)
 
@@ -93,17 +119,21 @@ Add to your Claude Desktop config:
 
 </details>
 
+---
+
 ## Usage Examples
 
 Once connected, just talk to Claude:
 
-- *"How was my running this month?"*
-- *"Compare my last 5 runs — am I getting faster?"*
-- *"What's my average heart rate on long runs vs tempo runs?"*
-- *"Show me my weekly mileage trend for the past 2 months"*
-- *"What gear has the most miles on it?"*
+- *"What's my current Z2 pace and how has it changed over the last 3 months?"*
+- *"My left knee is sore — adjust my training plan for this week"*
+- *"Am I on track for my sub-50 10K goal?"*
+- *"How was my running this month compared to last month?"*
+- *"Which shoes have the most miles on them?"*
 
-The `get_running_summary` tool is especially powerful for coaching — it computes weekly mileage, pace trends, best 5K/10K efforts, and heart rate stats, all in one call.
+Memory is stored in `~/.strava-mcp/memory/` as plain JSON files — easy to inspect or back up.
+
+---
 
 ## Security
 
@@ -113,7 +143,7 @@ Credentials are loaded from environment variables only — never hardcoded. The 
 
 - Python 3.10+
 - A Strava account with API access
-- MCP-compatible client (Claude Desktop, Claude Code, etc.)
+- Claude Desktop (or any MCP-compatible client)
 
 ## License
 
